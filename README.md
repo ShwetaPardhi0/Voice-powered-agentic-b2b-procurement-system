@@ -46,7 +46,7 @@ graph TD
 Copy your environment variables into `.env` standard root structure:
 
 ```ini
-GOOGLE_API_KEY="AIzaSyA..."
+GOOGLE_API_KEY="GOOGLE_API_KEY"
 MODEL="gemini-2.5-flash"
 EMBEDDING_MODEL="text-embedding-004"
 TEMPERATURE=0.0
