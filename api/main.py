@@ -1,7 +1,8 @@
 import os
 import sys
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, AIMessage
 
@@ -9,6 +10,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.connection import get_db_connection
 from agents.graph import build_graph
+from voice.livekit_client import LiveKitClient
+from voice.pipeline import VoicePipeline
 
 app = FastAPI(title="Agentic B2B Control Tower Backend")
 
@@ -243,6 +246,104 @@ async def get_db_analytics():
             },
             "financial_breakdown": breakdown
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ── Lazy-loaded voice pipeline (initialised on first use) ──────────────────────
+_voice_pipeline: VoicePipeline | None = None
+_livekit_client: LiveKitClient | None = None
+
+def _get_voice_pipeline() -> VoicePipeline:
+    global _voice_pipeline
+    if _voice_pipeline is None:
+        _voice_pipeline = VoicePipeline()
+    return _voice_pipeline
+
+def _get_livekit_client() -> LiveKitClient:
+    global _livekit_client
+    if _livekit_client is None:
+        _livekit_client = LiveKitClient()
+    return _livekit_client
+
+
+# ── POST /api/voice/token ─────────────────────────────────────────────────────
+
+class VoiceTokenRequest(BaseModel):
+    session_id: str
+    room_name: str = "procurement-room"
+
+@app.post("/api/voice/token")
+async def get_voice_token(request: VoiceTokenRequest):
+    """
+    Issue a signed LiveKit JWT token for the frontend WebRTC client.
+    LIVEKIT_API_KEY, LIVEKIT_API_SECRET, and LIVEKIT_URL must be set in .env.
+    """
+    try:
+        lk = _get_livekit_client()
+        token = lk.generate_token(
+            room_name=request.room_name,
+            participant_name=request.session_id,
+        )
+        return {
+            "token": token,
+            "livekit_url": lk.livekit_url,
+            "room": request.room_name,
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── POST /api/voice/upload ────────────────────────────────────────────────────
+
+@app.post("/api/voice/upload")
+async def handle_voice_upload(
+    session_id: str = Form(...),
+    audio: UploadFile = File(...),
+    tts_enabled: bool = Form(True),
+):
+    """
+    Accepts an audio file upload, transcribes it via Deepgram STT, runs
+    the transcript through the LangGraph agent network, and returns both
+    the text reply and synthesised speech (ElevenLabs) as audio/mpeg.
+
+    Form fields:
+      - session_id   : unique conversation identifier
+      - audio        : audio file (wav / mp3 / webm / ogg etc.)
+      - tts_enabled  : whether to return TTS audio (default True)
+    """
+    try:
+        audio_bytes = await audio.read()
+        mime_type = audio.content_type or "audio/wav"
+
+        pipeline = _get_voice_pipeline()
+        result = pipeline.run(
+            audio_bytes=audio_bytes,
+            session_id=session_id,
+            mime_type=mime_type,
+        )
+
+        if tts_enabled and result.get("audio"):
+            # Return synthesised speech directly as audio stream
+            return Response(
+                content=result["audio"],
+                media_type="audio/mpeg",
+                headers={
+                    "X-Transcript": result["transcript"][:500],
+                    "X-Intent": str(result["intent"].get("intent", "")),
+                    "X-Agent-Response": result["response"][:500],
+                },
+            )
+
+        return {
+            "transcript": result["transcript"],
+            "intent": result["intent"],
+            "response": result["response"],
+        }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
