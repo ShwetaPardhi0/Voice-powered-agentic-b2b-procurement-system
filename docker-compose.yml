@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Relational Vector Database
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: b2b_procurement_db
+    ports:
+      - "5433:5432" # Maps host 5433 to container 5432 to match .env DB_PORT
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Manavleena#2
+      POSTGRES_DB: procurement_ai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d procurement_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Cache and Events Bus
+  redis:
+    image: redis:7-alpine
+    container_name: b2b_procurement_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:

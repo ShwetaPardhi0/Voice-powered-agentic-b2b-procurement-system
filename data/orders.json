@@ -1,0 +1,101 @@
+[
+  {
+    "sku": "SCR-001",
+    "quantity": 800,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 36.0,
+    "status": "ORDER_PLACED",
+    "timestamp": "2026-06-22T15:58:23.999279"
+  },
+  {
+    "sku": "STL-002",
+    "quantity": 10,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 1150.0,
+    "status": "ORDER_PLACED",
+    "timestamp": "2026-06-22T15:58:24.002638"
+  },
+  {
+    "sku": "SCR-001",
+    "quantity": 800,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 36.0,
+    "status": "ORDER_PLACED",
+    "timestamp": "2026-06-22T17:02:43.458462"
+  },
+  {
+    "sku": "STL-002",
+    "quantity": 10,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 1150.0,
+    "status": "ORDER_PLACED",
+    "timestamp": "2026-06-22T17:02:43.463815"
+  },
+  {
+    "sku": "STL-002",
+    "quantity": 55,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 6325.0,
+    "status": "PENDING_APPROVAL",
+    "timestamp": "2026-06-22T17:02:43.487303"
+  },
+  {
+    "sku": "SCR-001",
+    "quantity": 800,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 36.0,
+    "status": "ORDER_PLACED",
+    "timestamp": "2026-06-25T16:32:33.496893"
+  },
+  {
+    "sku": "STL-002",
+    "quantity": 10,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 1150.0,
+    "status": "ORDER_PLACED",
+    "timestamp": "2026-06-25T16:32:33.504724"
+  },
+  {
+    "sku": "STL-002",
+    "quantity": 55,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 6325.0,
+    "status": "PENDING_APPROVAL",
+    "timestamp": "2026-06-25T16:32:33.525884"
+  },
+  {
+    "sku": "SCR-001",
+    "quantity": 800,
+    "vendor_id": "V-102",
+    "vendor_name": "Global Alloys",
+    "total_value": 24.0,
+    "status": "ORDER_PLACED",
+    "timestamp": "2026-06-25T16:33:10.132040"
+  },
+  {
+    "sku": "STL-002",
+    "quantity": 10,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 1150.0,
+    "status": "ORDER_PLACED",
+    "timestamp": "2026-06-25T16:33:10.161477"
+  },
+  {
+    "sku": "STL-002",
+    "quantity": 55,
+    "vendor_id": "V-101",
+    "vendor_name": "Steel Dynamics",
+    "total_value": 6325.0,
+    "status": "PENDING_APPROVAL",
+    "timestamp": "2026-06-25T16:33:10.187067"
+  }
+]

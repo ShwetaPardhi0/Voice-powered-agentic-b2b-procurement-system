@@ -1,0 +1,91 @@
+STANDARD OPERATING PROCEDURE — PROCUREMENT PROCESS
+Document ID: SOP-PROC-2025-003
+Version: 1.8
+Last Updated: 20-Feb-2025
+Approved By: Chief Procurement Officer
+
+1. PURPOSE
+This SOP defines the end-to-end procurement process from purchase requisition to payment settlement. All procurement activities must follow this workflow to ensure compliance, cost control, and audit traceability.
+
+2. PROCUREMENT WORKFLOW — STEP BY STEP
+
+  Step 1: Purchase Requisition (PR) Creation
+  - Triggered automatically when inventory hits reorder point, or manually by department head
+  - PR must include: SKU, quantity, required-by date, estimated unit cost, justification
+  - System auto-validates against approved vendor list and budget allocation
+
+  Step 2: PR Review and Approval
+  - PRs under ₹25,000: Auto-approved, proceeds directly to PO creation
+  - PRs ₹25,001 to ₹1,00,000: Routed to Procurement Manager for approval (SLA: 4 hours)
+  - PRs ₹1,00,001 to ₹5,00,000: Routed to Senior Procurement Manager (SLA: 8 hours)
+  - PRs above ₹5,00,000: Routed to VP Supply Chain (SLA: 24 hours)
+  - Rejection requires documented reason; requestor is notified immediately
+
+  Step 3: Vendor Selection
+  - For approved PRs, system recommends top 3 vendors based on:
+    a) Historical delivery performance (on-time rate)
+    b) Price competitiveness (last 3 quotes)
+    c) Quality score (rejection rate from last 12 months)
+  - Single-source items: Direct PO to contracted supplier
+  - Multi-source items above ₹2,00,000: Minimum 3 competitive quotes required
+
+  Step 4: Purchase Order (PO) Generation
+  - System generates PO with: vendor details, line items, pricing, delivery schedule, payment terms
+  - PO sent to vendor via email and API integration
+  - Vendor must acknowledge PO within 24 hours; unacknowledged POs trigger escalation
+
+  Step 5: Order Tracking and Follow-Up
+  - System tracks delivery status against committed lead time
+  - T-2 days before due date: automated reminder sent to vendor
+  - T+1 day past due date: escalation email to Procurement Manager
+  - T+3 days past due date: escalation to Senior Procurement Manager with penalty calculation
+
+  Step 6: Goods Receipt and Quality Inspection
+  - Warehouse team performs quantity check against PO
+  - Quality team inspects random sample (10% of batch or minimum 50 units)
+  - Accepted goods: GRN (Goods Receipt Note) generated, inventory updated
+  - Rejected goods: RMA (Return Material Authorization) raised, vendor notified within 24 hours
+
+  Step 7: Invoice Matching and Payment
+  - Three-way match: PO ↔ GRN ↔ Vendor Invoice
+  - Discrepancies above 2% require Procurement Manager resolution
+  - Approved invoices processed per payment terms (typically Net 30)
+  - Early payment discounts applied automatically when beneficial (discount rate > cost of capital)
+
+3. ESCALATION RULES
+
+  Level 1 — Procurement Manager
+  - Unresolved vendor delays beyond 2 business days
+  - Quality rejections above 5% of shipment
+  - Budget overruns up to 10%
+
+  Level 2 — Senior Procurement Manager
+  - Vendor delays beyond 5 business days
+  - Repeated quality failures (3+ incidents in 90 days)
+  - Budget overruns between 10% and 25%
+  - Contract disputes under ₹5,00,000
+
+  Level 3 — VP Supply Chain
+  - Critical stockout risk affecting production
+  - Vendor contract termination decisions
+  - Budget overruns above 25%
+  - Contract disputes above ₹5,00,000
+  - New vendor onboarding for strategic categories
+
+  Level 4 — Chief Procurement Officer
+  - Supply chain disruption affecting multiple categories
+  - Regulatory compliance issues
+  - Strategic sourcing decisions above ₹25,00,000
+
+4. EMERGENCY PROCUREMENT
+  - Triggered when stock reaches critical level (below 50% of safety stock)
+  - Bypasses standard approval chain: Procurement Manager can authorize up to ₹2,00,000
+  - Must use pre-approved emergency vendor list
+  - Post-facto documentation and VP notification required within 24 hours
+  - Emergency orders must be flagged in system for audit trail
+
+5. COMPLIANCE AND AUDIT
+  - All procurement activities logged in agent_logs table
+  - Monthly compliance report generated automatically
+  - Annual vendor performance review conducted in Q4
+  - All documents retained for minimum 7 years per regulatory requirements

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "V-101",
+    "name": "Steel Dynamics",
+    "category": "Steel Supply",
+    "pricing": {
+      "catalog": [
+        {"sku": "SCR-001", "price": 0.060, "lead_time_days": 3},
+        {"sku": "STL-002", "price": 115.0, "lead_time_days": 7}
+      ]
+    },
+    "catalog_text": "Steel Dynamics is a premier supplier of high-strength structural Steel Plates (4x8) and heavy duty Fasteners (M8). Custom sizes are available on request."
+  },
+  {
+    "id": "V-102",
+    "name": "Global Alloys",
+    "category": "Alloys & Screws",
+    "pricing": {
+      "catalog": [
+        {"sku": "SCR-001", "price": 0.030, "lead_time_days": 2},
+        {"sku": "ALM-003", "price": 2.4, "lead_time_days": 5}
+      ]
+    },
+    "catalog_text": "Global Alloys provides high-performance light metal fasteners, screws, and pure aluminum ingots. They are certified for marine usage and have excellent lead times."
+  },
+  {
+    "id": "V-103",
+    "name": "Hardware Hub",
+    "category": "Industrial Hardware",
+    "pricing": {
+      "catalog": [
+        {"sku": "SCR-001", "price": 0.05, "lead_time_days": 1},
+        {"sku": "STL-002", "price": 125.0, "lead_time_days": 3}
+      ]
+    },
+    "catalog_text": "Hardware Hub offers standard steel hardware, screws and structural sheeting plates. Known for expedited next-day shipping options."
+  }
+]

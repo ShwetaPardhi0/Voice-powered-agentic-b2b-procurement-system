@@ -1,0 +1,17 @@
+[
+  {
+    "sku": "SCR-001",
+    "monthly_demand": [1800, 1900, 2100, 2000, 2200],
+    "forecasted_demand_next_month": 2300
+  },
+  {
+    "sku": "STL-002",
+    "monthly_demand": [40, 45, 42, 48, 50],
+    "forecasted_demand_next_month": 55
+  },
+  {
+    "sku": "ALM-003",
+    "monthly_demand": [90, 100, 110, 95, 105],
+    "forecasted_demand_next_month": 115
+  }
+]

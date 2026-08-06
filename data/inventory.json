@@ -1,0 +1,26 @@
+[
+  {
+    "sku": "SCR-001",
+    "name": "Industrial Screws (M8)",
+    "stock_level": 1500,
+    "reorder_point": 2000,
+    "unit": "pcs",
+    "cost_per_unit": 0.05
+  },
+  {
+    "sku": "STL-002",
+    "name": "Steel Plates (4x8)",
+    "stock_level": 45,
+    "reorder_point": 50,
+    "unit": "sheets",
+    "cost_per_unit": 120.0
+  },
+  {
+    "sku": "ALM-003",
+    "name": "Aluminum Ingots",
+    "stock_level": 120,
+    "reorder_point": 100,
+    "unit": "kg",
+    "cost_per_unit": 2.5
+  }
+]

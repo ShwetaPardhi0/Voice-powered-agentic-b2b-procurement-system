@@ -1,0 +1,31 @@
+[
+  {
+    "vendor_id": "V-101",
+    "reliability_score": 0.95,
+    "alerts": []
+  },
+  {
+    "vendor_id": "V-102",
+    "reliability_score": 0.75,
+    "alerts": [
+      {
+        "type": "LOGISTICS_DELAY",
+        "severity": "MEDIUM",
+        "message": "Potential 2-day delay in shipping due to port congestion.",
+        "timestamp": "2026-06-25T10:00:00Z"
+      }
+    ]
+  },
+  {
+    "vendor_id": "V-103",
+    "reliability_score": 0.60,
+    "alerts": [
+      {
+        "type": "QUALITY_ISSUE",
+        "severity": "HIGH",
+        "message": "Recent batch of STL-002 from this supplier failed inspection.",
+        "timestamp": "2026-06-24T15:00:00Z"
+      }
+    ]
+  }
+]

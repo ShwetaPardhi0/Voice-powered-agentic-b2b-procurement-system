@@ -1,0 +1,60 @@
+INVENTORY MANAGEMENT POLICY
+Document ID: INV-POL-2025-001
+Version: 2.3
+Last Updated: 15-Mar-2025
+Approved By: VP Supply Chain Operations
+
+1. PURPOSE
+This policy defines the rules and procedures for managing inventory levels across all warehouses. It ensures optimal stock availability while minimizing carrying costs and preventing stockouts that disrupt production schedules.
+
+2. INVENTORY CLASSIFICATION (ABC ANALYSIS)
+  - Category A (High Value): Top 20% of SKUs contributing 80% of annual spend
+    → Reviewed weekly, reorder point calculated daily
+  - Category B (Medium Value): Next 30% of SKUs contributing 15% of annual spend
+    → Reviewed bi-weekly, reorder point calculated weekly
+  - Category C (Low Value): Bottom 50% of SKUs contributing 5% of annual spend
+    → Reviewed monthly, reorder point calculated monthly
+
+3. REORDER RULES
+  3.1 Reorder Point Formula:
+      Reorder Point = (Average Daily Usage × Lead Time in Days) + Safety Stock
+
+  3.2 Safety Stock Formula:
+      Safety Stock = Z-score × σ(demand) × √(Lead Time)
+      Where Z-score = 1.65 for 95% service level (Category A items)
+      Where Z-score = 1.28 for 90% service level (Category B items)
+      Where Z-score = 1.04 for 85% service level (Category C items)
+
+  3.3 Economic Order Quantity (EOQ):
+      EOQ = √((2 × Annual Demand × Order Cost) / Holding Cost per Unit)
+
+4. STOCK LEVEL THRESHOLDS
+  - Maximum Stock Level: 3 months of average consumption
+  - Minimum Stock Level: Equal to safety stock quantity
+  - Critical Level (Emergency): When stock falls below 50% of safety stock
+  - Dead Stock Threshold: Items with zero movement for 180+ days
+
+5. APPROVAL THRESHOLDS FOR PURCHASE ORDERS
+  - Up to ₹25,000: Auto-approved by system
+  - ₹25,001 to ₹1,00,000: Procurement Manager approval required
+  - ₹1,00,001 to ₹5,00,000: Senior Procurement Manager approval required
+  - Above ₹5,00,000: VP Supply Chain approval required
+  - Emergency Orders (any value): Procurement Manager can approve with post-facto VP notification within 24 hours
+
+6. WAREHOUSE-SPECIFIC RULES
+  - Mumbai Warehouse (WH-MUM): Primary hub, maintains 60% of total inventory
+  - Delhi Warehouse (WH-DEL): Regional hub, maintains 25% of total inventory
+  - Chennai Warehouse (WH-CHE): Regional hub, maintains 15% of total inventory
+  - Inter-warehouse transfers require Manager approval and 48-hour processing time
+
+7. CYCLE COUNTING AND AUDITS
+  - Category A items: Full count every month
+  - Category B items: Full count every quarter
+  - Category C items: Full count every 6 months
+  - Variance tolerance: 2% for Category A, 5% for Category B/C
+  - Variances exceeding tolerance trigger immediate investigation
+
+8. OBSOLESCENCE AND WRITE-OFF
+  - Slow-moving stock (no demand for 90 days): Flag for review
+  - Dead stock (no demand for 180 days): Initiate disposal or discount sale process
+  - Write-off authority: Finance Controller for items under ₹50,000, CFO for above

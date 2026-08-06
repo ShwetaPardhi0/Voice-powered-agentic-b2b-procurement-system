@@ -1,0 +1,50 @@
+SUPPLY AGREEMENT — MEHTA TRADERS PVT. LTD.
+Contract Reference: MT-2025-0042
+Effective Date: 01-Jan-2025
+Expiry Date: 31-Dec-2025
+Parties: Mehta Traders Pvt. Ltd. ("Supplier") and Procurement AI Control Tower ("Buyer")
+
+1. SCOPE OF SUPPLY
+Mehta Traders agrees to supply the following categories:
+  - Industrial Fasteners (M6, M8, M10 steel screws, bolts, and nuts)
+  - Mild Steel Plates (A36 grade, 4x8 ft sheets, 6mm and 10mm thickness)
+  - Welding Consumables (E6013 electrodes, MIG wire 0.8mm)
+
+2. MINIMUM ORDER QUANTITY (MOQ)
+  - Fasteners: 5,000 pieces per SKU per order
+  - Steel Plates: 50 sheets per order
+  - Welding Consumables: 100 kg per order
+Orders below MOQ will incur a 12% small-order surcharge.
+
+3. PRICING AND PAYMENT TERMS
+  - Steel Screws M8: ₹4.50 per piece (FOB Mehta Warehouse, Mumbai)
+  - Steel Plates 6mm: ₹8,200 per sheet
+  - Steel Plates 10mm: ₹11,500 per sheet
+  - Welding Electrodes E6013: ₹185 per kg
+  - Payment Terms: Net 30 days from invoice date
+  - Early Payment Discount: 2% discount if paid within 10 days
+  - Late Payment Penalty: 1.5% per month on overdue balance
+
+4. DELIVERY AND LOGISTICS
+  - Standard Lead Time: 5 business days for fasteners, 7 business days for steel plates
+  - Expedited Shipping: Available at 15% premium, reduces lead time to 2 business days
+  - Free Shipping: Orders above ₹50,000 qualify for free standard delivery
+  - Shipping Point: Mehta Traders Depot, Bhiwandi, Maharashtra
+
+5. SERVICE LEVEL AGREEMENT (SLA)
+  - On-Time Delivery Rate Target: 95% per quarter
+  - Quality Acceptance Rate Target: 98% per batch
+  - Late Delivery Penalty: 2.5% of order value per day of delay beyond committed lead time
+  - Maximum Penalty Cap: 15% of total order value
+  - Defective Goods: Supplier must replace rejected batches within 3 business days at no cost
+  - Force Majeure: Delays due to natural disasters, strikes, or government actions are exempt from penalties with documented proof within 48 hours
+
+6. QUALITY STANDARDS
+  - All fasteners must conform to IS 1364 (Part 1) standards
+  - Steel plates must carry original mill test certificates
+  - Welding consumables must meet AWS A5.1 specifications
+  - Buyer reserves right to inspect goods at supplier premises with 24-hour notice
+
+7. CONTRACT RENEWAL
+  - Auto-renewal for 12 months unless either party provides 60-day written termination notice
+  - Price revision capped at 5% annually, subject to mutual agreement

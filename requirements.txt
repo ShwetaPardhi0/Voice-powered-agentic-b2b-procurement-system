@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pydantic
+openai
+langchain
+langchain-google-genai
+google-generativeai
+python-dotenv
+aiohttp
+pandas
+pgvector
+psycopg2-binary
+langgraph
+pypdf
+sqlalchemy

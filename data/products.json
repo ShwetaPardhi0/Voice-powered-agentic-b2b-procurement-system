@@ -1,0 +1,59 @@
+[
+  {
+    "sku": "SCR-001",
+    "name": "Industrial Screws (M8)",
+    "stock_level": 1500,
+    "reorder_threshold": 2000,
+    "unit": "pcs",
+    "catalog_items": [
+      {
+        "vendor_id": "V-101",
+        "name": "Steel Dynamics Fasteners (M8)",
+        "description": "Premium strength steel screws (M8 size), offering long-term corrosion resistance for indoor structural installations."
+      },
+      {
+        "vendor_id": "V-102",
+        "name": "Global Alloys Marine Fasteners (M8)",
+        "description": "Specialized alloy steel screws (M8 size) specifically designed to resist saltwater corrosion in marine environments."
+      },
+      {
+        "vendor_id": "V-103",
+        "name": "Hardware Hub Zinc Plate Screws",
+        "description": "Zinc plated rust-prevention carbon steel screws, bulk package for general industrial applications."
+      }
+    ]
+  },
+  {
+    "sku": "STL-002",
+    "name": "Steel Plates (4x8)",
+    "stock_level": 45,
+    "reorder_threshold": 50,
+    "unit": "sheets",
+    "catalog_items": [
+      {
+        "vendor_id": "V-101",
+        "name": "Steel Dynamics A36 Carbon Steel Plate",
+        "description": "Structural grade carbon steel plate (4ft x 8ft x 1/4in thickness) complying with standard ASTM A36 quality specifications."
+      },
+      {
+        "vendor_id": "V-103",
+        "name": "Hardware Hub Heavy Steel Plate",
+        "description": "Thick heavy-load steel plate (4ft x 8ft sheets) pre-finished with anti-rust oil; available for next-day dispatch."
+      }
+    ]
+  },
+  {
+    "sku": "ALM-003",
+    "name": "Aluminum Ingots",
+    "stock_level": 120,
+    "reorder_threshold": 100,
+    "unit": "kg",
+    "catalog_items": [
+      {
+        "vendor_id": "V-102",
+        "name": "Global Alloys 99.7% Pure Aluminum Ingot",
+        "description": "Refined aluminum casting ingot, 99.7% pure rating. Suited for foundry operations, die casting, extrusion, or mixing alloys."
+      }
+    ]
+  }
+]
