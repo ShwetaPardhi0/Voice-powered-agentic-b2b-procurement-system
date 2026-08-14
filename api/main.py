@@ -2,7 +2,7 @@ import os
 import sys
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, HTMLResponse
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, AIMessage
 
@@ -346,6 +346,21 @@ async def handle_voice_upload(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── GET /voice-ui ─────────────────────────────────────────────────────────────
+
+@app.get("/voice-ui", response_class=HTMLResponse)
+@app.get("/demo", response_class=HTMLResponse)
+async def serve_voice_ui():
+    """
+    Renders the interactive Voice-to-Voice AI Procurement dashboard.
+    """
+    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", "voice_ui.html")
+    if not os.path.exists(template_path):
+        raise HTTPException(status_code=404, detail="voice_ui.html template not found")
+    with open(template_path, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 if __name__ == "__main__":
