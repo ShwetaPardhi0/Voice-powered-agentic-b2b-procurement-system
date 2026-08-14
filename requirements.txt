@@ -16,3 +16,4 @@ sqlalchemy
 livekit
 deepgram-sdk
 elevenlabs
+python-multipart
