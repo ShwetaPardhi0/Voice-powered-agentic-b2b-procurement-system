@@ -2,7 +2,6 @@ import os
 from dotenv import load_dotenv
 from deepgram import (
     DeepgramClient,
-    PrerecordedOptions,
     LiveOptions,
     LiveTranscriptionEvents
 )
@@ -15,7 +14,8 @@ class DeepgramSTT:
         self.api_key = api_key or os.getenv("DEEPGRAM_API_KEY")
         if not self.api_key:
             raise ValueError("DEEPGRAM_API_KEY must be configured in environment.")
-        self.client = DeepgramClient(self.api_key)
+        # self.client = DeepgramClient(self.api_key)
+        self.client = DeepgramClient(api_key=self.api_key)
 
     def transcribe_blob(self, file_bytes: bytes, mime_type: str = "audio/wav") -> str:
         """Transcribes pre-recorded audio bytes to text."""
