@@ -1,59 +1,56 @@
 import os
 from dotenv import load_dotenv
-from deepgram import (
-    DeepgramClient,
-    LiveOptions,
-    LiveTranscriptionEvents
-)
+from deepgram import DeepgramClient
+from deepgram.core.events import EventType
 
 load_dotenv()
 
+
 class DeepgramSTT:
-    """Handles audio transcription logic using Deepgram API."""
+    """Handles real-time streaming audio transcription using Deepgram API v7.6.0."""
+
     def __init__(self, api_key: str = None):
         self.api_key = api_key or os.getenv("DEEPGRAM_API_KEY")
         if not self.api_key:
             raise ValueError("DEEPGRAM_API_KEY must be configured in environment.")
-        # self.client = DeepgramClient(self.api_key)
         self.client = DeepgramClient(api_key=self.api_key)
 
-    def transcribe_blob(self, file_bytes: bytes, mime_type: str = "audio/wav") -> str:
-        """Transcribes pre-recorded audio bytes to text."""
-        try:
-            payload = {
-                "buffer": file_bytes,
-            }
-            options = PrerecordedOptions(
-                model="nova-2-general",
-                smart_format=True,
-                mimetype=mime_type
-            )
-            response = self.client.listen.prerecorded.v("1").transcribe_file(payload, options)
-            transcript = response.results.channels[0].alternatives[0].transcript
-            return transcript
-        except Exception as e:
-            print(f"Deepgram Pre-recorded STT Error: {e}")
-            raise e
+    # -------------------------------------------------------------------------
+    # Prerecorded method (Disabled per project requirements for real-time STT)
+    # -------------------------------------------------------------------------
+    # def transcribe_blob(self, file_bytes: bytes, mime_type: str = "audio/wav") -> str:
+    #     """
+    #     [DISABLED] Prerecorded audio blob transcription.
+    #     Use create_live_stream() for real-time streaming STT instead.
+    #     """
+    #     raise NotImplementedError("Prerecorded transcription is disabled. Use real-time live streaming STT.")
 
-    def create_live_stream(self, options: LiveOptions = None):
+    def create_live_stream(
+        self,
+        model: str = "nova-2-general",
+        encoding: str = "linear16",
+        sample_rate: int = 16000,
+        **kwargs,
+    ):
         """
-        Creates a real-time live transcribing stream client.
-        Caller is expected to register events on the returned connection.
+        Establishes a real-time WebSocket live transcription stream using Deepgram SDK v7.6.0.
+
+        Returns the WebSocket connection context manager (v2 streaming API).
+        Usage:
+            with stt.create_live_stream() as connection:
+                connection.on(EventType.MESSAGE, on_message)
+                connection.on(EventType.OPEN, on_open)
+                connection.start_listening()
+                connection.send_media(audio_chunk)
         """
         try:
-            if not options:
-                options = LiveOptions(
-                    model="nova-2-general",
-                    language="en-US",
-                    smart_format=True,
-                    encoding="linear16",
-                    channels=1,
-                    sample_rate=16000
-                )
-            
-            # Start live client connection
-            dg_connection = self.client.listen.live.v("1")
-            return dg_connection, options
+            connection = self.client.listen.v2.connect(
+                model=model,
+                encoding=encoding,
+                sample_rate=sample_rate,
+                **kwargs,
+            )
+            return connection
         except Exception as e:
             print(f"Deepgram Live STT Connection Error: {e}")
             raise e

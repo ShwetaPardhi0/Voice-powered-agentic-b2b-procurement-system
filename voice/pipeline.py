@@ -45,7 +45,7 @@ class VoicePipeline:
 
     def run(
         self,
-        audio_bytes: bytes,
+        audio_bytes_or_transcript,
         session_id: str,
         mime_type: str = "audio/wav",
         tts_output_path: str = None,
@@ -62,8 +62,14 @@ class VoicePipeline:
               "audio":      bytes  # TTS-synthesised reply
             }
         """
-        # 1. Transcribe --------------------------------------------------
-        transcript = self.stt.transcribe_blob(audio_bytes, mime_type=mime_type)
+        # 1. Transcribe / Transcript Input -------------------------------
+        if isinstance(audio_bytes_or_transcript, str):
+            transcript = audio_bytes_or_transcript
+        else:
+            try:
+                transcript = self.stt.transcribe_blob(audio_bytes_or_transcript, mime_type=mime_type)
+            except (NotImplementedError, AttributeError):
+                transcript = ""
         print(f"[Pipeline] Transcript: {transcript!r}")
 
         if not transcript:
