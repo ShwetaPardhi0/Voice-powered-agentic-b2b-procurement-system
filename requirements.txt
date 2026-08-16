@@ -19,3 +19,5 @@ deepgram-sdk
 elevenlabs
 python-multipart
 soundfile
+slack_sdk
+redis

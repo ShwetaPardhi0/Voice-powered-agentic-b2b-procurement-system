@@ -1,7 +1,7 @@
 import os
 import sys
 import asyncio
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, HTMLResponse
 from pydantic import BaseModel
@@ -365,6 +365,238 @@ async def handle_voice_upload(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── POST /api/slack/actions ───────────────────────────────────────────────────
+
+@app.post("/api/slack/actions")
+async def handle_slack_actions(request: Request):
+    """
+    Slack Webhook Interactivity Endpoint.
+    Verifies SLACK_SIGNING_SECRET before processing Approve/Reject actions.
+    Updates PO status in PostgreSQL (Authoritative Source of Truth).
+    """
+    body = await request.body()
+    timestamp = request.headers.get("X-Slack-Request-Timestamp", "")
+    signature = request.headers.get("X-Slack-Signature", "")
+
+    # 1. Mandatory Signature Verification
+    from services.slack_service import verify_slack_signature
+    if not verify_slack_signature(body, timestamp, signature):
+        print("[Slack Webhook Security Warning] Signature verification failed!")
+        raise HTTPException(status_code=401, detail="Invalid Slack signature")
+
+    # 2. Parse payload form parameter sent by Slack
+    form = await request.form()
+    payload_raw = form.get("payload")
+    if not payload_raw:
+        raise HTTPException(status_code=400, detail="Missing payload parameter")
+
+    import json
+    payload = json.loads(payload_raw)
+
+    actions = payload.get("actions", [])
+    if not actions:
+        return {"status": "ok"}
+
+    action = actions[0]
+    action_id = action.get("action_id")
+    po_id = action.get("value")
+    user_name = payload.get("user", {}).get("username", "Slack Manager")
+
+    if not po_id or action_id not in ["approve_po", "reject_po"]:
+        raise HTTPException(status_code=400, detail="Invalid action or missing PO ID")
+
+    new_status = "APPROVED" if action_id == "approve_po" else "REJECTED"
+
+    # 3. Update PO status in PostgreSQL (Authoritative Source of Truth)
+    from agents.procurement_agent import update_po_status
+    try:
+        result = update_po_status(po_id, new_status, action_by=f"@{user_name}")
+        if result.get("message"):
+            already_status = result["status"]
+            return {
+                "response_type": "ephemeral",
+                "replace_original": False,
+                "text": f"⚠️ Action ignored: Purchase Order #{po_id} is already `{already_status}` and cannot be changed to `{new_status}`.",
+            }
+        return {
+            "response_type": "in_channel",
+            "replace_original": True,
+            "text": f"{'✅' if new_status == 'APPROVED' else '❌'} Purchase Order #{po_id} has been {new_status} by @{user_name}.",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── GET /api/po/{po_id} ────────────────────────────────────────────────────────
+
+@app.get("/api/po/{po_id}")
+async def get_po_details(po_id: str):
+    """
+    Fetches PO status and line item details directly from PostgreSQL (Authoritative Source of Truth).
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, supplier_id, status, created_at FROM purchase_orders WHERE id::text = %s",
+        (str(po_id),)
+    )
+    po_row = cursor.fetchone()
+    if not po_row:
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+
+    cursor.execute(
+        "SELECT sku, quantity, price FROM po_line_items WHERE po_id::text = %s",
+        (str(po_id),)
+    )
+    items = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    total_val = sum(float(i[1]) * float(i[2]) for i in items)
+
+    return {
+        "po_id": str(po_row[0]),
+        "supplier_id": po_row[1],
+        "status": po_row[2],
+        "created_at": str(po_row[3]),
+        "total_value": total_val,
+        "items": [{"sku": i[0], "quantity": i[1], "unit_price": float(i[2])} for i in items],
+    }
+
+
+# ── GET /po-detail/{po_id} (Manager Dashboard Detail View) ───────────────────
+
+from fastapi.responses import HTMLResponse
+
+@app.get("/po-detail/{po_id}", response_class=HTMLResponse)
+async def view_po_dashboard_page(po_id: str):
+    """
+    Manager Dashboard PO Detail Page linked from Slack [View PO] button.
+    Renders full PO metadata, line items, risk level, and interactive action buttons.
+    """
+    try:
+        po = await get_po_details(po_id)
+    except HTTPException:
+        return HTMLResponse(content="<h1>404 — Purchase Order Not Found</h1>", status_code=404)
+
+    status = po["status"]
+    badge_class = "bg-warning" if status == "PENDING_APPROVAL" else ("bg-success" if status == "APPROVED" else "bg-danger")
+
+    items_html = "".join(
+        f"<tr><td><code>{item['sku']}</code></td><td>{item['quantity']:,}</td><td>₹{item['unit_price']:,.2f}</td><td>₹{(item['quantity'] * item['unit_price']):,.2f}</td></tr>"
+        for item in po["items"]
+    )
+
+    action_buttons = ""
+    if status == "PENDING_APPROVAL":
+        action_buttons = f"""
+        <div style="margin-top: 25px;">
+            <button onclick="updatePO('approve')" style="background:#28a745; color:white; border:none; padding:12px 24px; border-radius:6px; font-size:16px; cursor:pointer; font-weight:bold; margin-right:10px;">🟢 Approve PO</button>
+            <button onclick="updatePO('reject')" style="background:#dc3545; color:white; border:none; padding:12px 24px; border-radius:6px; font-size:16px; cursor:pointer; font-weight:bold;">🔴 Reject PO</button>
+        </div>
+        """
+    else:
+        action_buttons = f"""
+        <div style="margin-top:25px; padding:15px; background:#e9ecef; border-radius:6px; font-weight:bold;">
+            🔒 Purchase Order is locked in state: <span style="text-transform:uppercase;">{status}</span>
+        </div>
+        """
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>PO Details — #{po_id}</title>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8f9fa; padding: 40px; color: #212529; }}
+            .card {{ max-width: 750px; margin: auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }}
+            .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }}
+            .status-badge {{ padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; text-transform: uppercase; background: #ffc107; color: #000; }}
+            .status-APPROVED {{ background: #28a745; color: white; }}
+            .status-REJECTED {{ background: #dc3545; color: white; }}
+            .status-OVERDUE {{ background: #fd7e14; color: white; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+            th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }}
+            th {{ background: #f1f3f5; font-size: 13px; text-transform: uppercase; }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="header">
+                <h2 style="margin:0;">📦 Purchase Order Details</h2>
+                <span class="status-badge status-{status}">{status}</span>
+            </div>
+            <p><strong>PO ID:</strong> <code>{po_id}</code></p>
+            <p><strong>Supplier:</strong> <code>{po['supplier_id']}</code></p>
+            <p><strong>Risk Rating:</strong> <span style="color:#d9534f; font-weight:bold;">Medium Risk</span></p>
+            <p><strong>Created At:</strong> {po['created_at']}</p>
+            <p><strong>Total Amount:</strong> <strong style="font-size: 20px; color: #2b8a3e;">₹{po['total_value']:,.2f}</strong></p>
+
+            <h3>Line Items</h3>
+            <table>
+                <thead>
+                    <tr><th>SKU</th><th>Quantity</th><th>Unit Price</th><th>Subtotal</th></tr>
+                </thead>
+                <tbody>
+                    {items_html}
+                </tbody>
+            </table>
+
+            {action_buttons}
+        </div>
+        <script>
+            async function updatePO(action) {{
+                if (!confirm(`Are you sure you want to ${action} PO #{po_id}?`)) return;
+                const res = await fetch(`/api/po/{po_id}/${{action}}`, {{ method: 'POST' }});
+                const data = await res.json();
+                alert(data.message || `PO ${{action}}d successfully!`);
+                window.location.reload();
+            }}
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html)
+
+
+# ── POST /api/reminders/process ───────────────────────────────────────────────
+
+@app.post("/api/reminders/process")
+async def trigger_po_reminders(simulated_days: float = 0.0):
+    """
+    Triggers the PO reminder sweep engine.
+    Supports simulated_days parameter to simulate time progression for automated testing.
+    """
+    from services.reminder_service import process_pending_po_reminders
+    results = process_pending_po_reminders(simulated_days_offset=simulated_days)
+    return {"status": "success", "processed_count": len(results), "actions": results}
+
+
+# ── POST /api/po/{po_id}/approve & /reject ────────────────────────────────────
+
+@app.post("/api/po/{po_id}/approve")
+async def approve_po_api(po_id: str):
+    """Direct REST endpoint to approve a pending PO in PostgreSQL."""
+    from agents.procurement_agent import update_po_status
+    try:
+        return update_po_status(po_id, "APPROVED", action_by="REST API Manager")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/po/{po_id}/reject")
+async def reject_po_api(po_id: str):
+    """Direct REST endpoint to reject a pending PO in PostgreSQL."""
+    from agents.procurement_agent import update_po_status
+    try:
+        return update_po_status(po_id, "REJECTED", action_by="REST API Manager")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ── GET /voice-ui ─────────────────────────────────────────────────────────────

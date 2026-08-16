@@ -14,6 +14,10 @@ from agents.state import AgentState
 
 load_dotenv(override=True)
 
+from services.slack_service import send_slack_po_approval_request, update_slack_po_message
+from services.email_service import send_email_po_approval_request
+from services.redis_service import cache_po_state, update_cached_po_status
+
 APPROVAL_THRESHOLD = 25000.00
 
 # ── DB Mutators & Query Helpers ──────────────────────────────────────────────
@@ -21,29 +25,30 @@ APPROVAL_THRESHOLD = 25000.00
 def create_purchase_order(supplier_id: str, sku: str, quantity: int, price: float) -> dict:
     """
     Creates a new purchase order and line item record.
-    If total value exceeds ₹25,000, it marks the PO status as 'PENDING_APPROVAL'.
-    Otherwise, marks it as 'ORDER_PLACED'.
+    If total value exceeds ₹25,000, it marks the PO status as 'PENDING_APPROVAL' in PostgreSQL,
+    dispatches Slack Block Kit approval request & Manager Email notification, and caches in Redis.
+    Otherwise, marks it as 'APPROVED' (or 'ORDER_PLACED') and updates stock level in PostgreSQL.
     """
     total_val = float(price) * quantity
-    status = "PENDING_APPROVAL" if total_val > APPROVAL_THRESHOLD else "ORDER_PLACED"
+    po_status = "PENDING_APPROVAL" if total_val > APPROVAL_THRESHOLD else "APPROVED"
     
     conn = get_db_connection()
     conn.autocommit = True
     cursor = conn.cursor()
     
-    # 1. Insert Purchase Order
+    # 1. Insert Purchase Order in PostgreSQL
     cursor.execute(
         """
         INSERT INTO purchase_orders (supplier_id, status)
         VALUES (%s, %s)
         RETURNING id, status, created_at
         """,
-        (supplier_id, status)
+        (supplier_id, po_status)
     )
     po_row = cursor.fetchone()
-    po_id, po_status, created_at = po_row
+    po_id, status_db, created_at = po_row
     
-    # 2. Insert PO Line Item
+    # 2. Insert PO Line Item in PostgreSQL
     cursor.execute(
         """
         INSERT INTO po_line_items (po_id, sku, quantity, price)
@@ -54,8 +59,8 @@ def create_purchase_order(supplier_id: str, sku: str, quantity: int, price: floa
     )
     li_id = cursor.fetchone()[0]
     
-    # 3. Update local inventory stock level if automatically approved
-    if po_status == "ORDER_PLACED":
+    # 3. If automatically approved (<= ₹25,000), update stock level in PostgreSQL
+    if po_status == "APPROVED":
         cursor.execute(
             """
             UPDATE inventory
@@ -65,10 +70,11 @@ def create_purchase_order(supplier_id: str, sku: str, quantity: int, price: floa
             (quantity, sku)
         )
         
+    conn.commit()
     cursor.close()
     conn.close()
     
-    return {
+    po_data = {
         "po_id": str(po_id),
         "status": po_status,
         "total_value": total_val,
@@ -76,7 +82,117 @@ def create_purchase_order(supplier_id: str, sku: str, quantity: int, price: floa
         "sku": sku,
         "quantity": quantity,
         "unit_price": price,
-        "created_at": str(created_at)
+        "created_at": str(created_at),
+        "slack_ts": None,
+        "slack_channel": None,
+    }
+
+    # 4. If > ₹25,000, trigger Slack Block Kit approval & Manager Email notification
+    if po_status == "PENDING_APPROVAL":
+        # Send Slack Block Kit approval message
+        slack_res = send_slack_po_approval_request(po_data)
+        if slack_res.get("success"):
+            po_data["slack_ts"] = slack_res.get("ts")
+            po_data["slack_channel"] = slack_res.get("channel")
+
+        # Send Manager Email notification
+        send_email_po_approval_request(po_data)
+
+    # 5. Cache transient state in Redis
+    cache_po_state(str(po_id), po_data)
+    
+    return po_data
+
+
+def update_po_status(po_id: str, new_status: str, action_by: str = "Manager") -> dict:
+    """
+    Updates the status of a purchase order in PostgreSQL (Authoritative Source of Truth).
+    On APPROVE: updates PO status to 'APPROVED' and increments stock_level in PostgreSQL.
+    On REJECT: updates PO status to 'REJECTED' in PostgreSQL (workflow stops).
+    Updates Slack message in place and updates Redis cache.
+    """
+    new_status = new_status.upper()
+    if new_status not in ["APPROVED", "REJECTED"]:
+        raise ValueError(f"Invalid status: {new_status}. Must be APPROVED or REJECTED.")
+
+    conn = get_db_connection()
+    conn.autocommit = True
+    cursor = conn.cursor()
+
+    # 1. Verify PO exists in PostgreSQL
+    cursor.execute(
+        "SELECT id, supplier_id, status FROM purchase_orders WHERE id::text = %s",
+        (str(po_id),)
+    )
+    po_row = cursor.fetchone()
+    if not po_row:
+        cursor.close()
+        conn.close()
+        raise ValueError(f"Purchase order {po_id} not found in database.")
+
+    po_uuid, supplier_id, current_status = po_row
+
+    if current_status in ["APPROVED", "REJECTED"]:
+        cursor.close()
+        conn.close()
+        return {
+            "po_id": str(po_id),
+            "status": current_status,
+            "message": f"PO {po_id} is already in state '{current_status}'.",
+        }
+
+    # 2. Fetch Line Items from PostgreSQL
+    cursor.execute(
+        "SELECT sku, quantity, price FROM po_line_items WHERE po_id::text = %s",
+        (str(po_id),)
+    )
+    items = cursor.fetchall()
+
+    # 3. Update PO status in PostgreSQL
+    cursor.execute(
+        "UPDATE purchase_orders SET status = %s WHERE id::text = %s",
+        (new_status, str(po_id))
+    )
+
+    # 4. If APPROVED, increment inventory stock levels in PostgreSQL
+    if new_status == "APPROVED":
+        for sku, quantity, price in items:
+            cursor.execute(
+                """
+                UPDATE inventory
+                SET stock_level = stock_level + %s
+                WHERE sku = %s
+                """,
+                (quantity, sku)
+            )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    # 5. Update Slack Message in place & update Redis Cache
+    from services.redis_service import get_cached_po_state
+    cached_data = get_cached_po_state(po_id) or {}
+    slack_channel = cached_data.get("slack_channel")
+    slack_ts = cached_data.get("slack_ts")
+
+    if slack_channel and slack_ts:
+        update_slack_po_message(
+            channel_id=slack_channel,
+            message_ts=slack_ts,
+            po_id=str(po_id),
+            status=new_status,
+            action_by=action_by,
+        )
+
+    update_cached_po_status(str(po_id), new_status)
+
+    return {
+        "po_id": str(po_id),
+        "status": new_status,
+        "supplier_id": supplier_id,
+        "action_by": action_by,
+        "items": [{"sku": i[0], "quantity": i[1], "price": float(i[2])} for i in items],
     }
 
 
