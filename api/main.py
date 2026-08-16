@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, HTMLResponse
@@ -295,6 +296,24 @@ async def get_voice_token(request: VoiceTokenRequest):
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/voice/agent/start")
+async def start_voice_agent(room_name: str = "procurement-room"):
+    """
+    Spawns and connects the LiveKit AI Voice Agent worker to the specified WebRTC room.
+    """
+    try:
+        from voice.livekit_agent import LiveKitVoiceAgent
+        agent = LiveKitVoiceAgent(room_name=room_name)
+        asyncio.create_task(agent.start())
+        return {
+            "status": "started",
+            "room": room_name,
+            "agent_identity": agent.identity,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start LiveKit Agent: {e}")
 
 
 # ── POST /api/voice/upload ────────────────────────────────────────────────────

@@ -14,6 +14,8 @@ langgraph
 pypdf
 sqlalchemy
 livekit
+livekit-api
 deepgram-sdk
 elevenlabs
 python-multipart
+soundfile

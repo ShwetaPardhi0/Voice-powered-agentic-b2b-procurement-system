@@ -15,15 +15,21 @@ class DeepgramSTT:
             raise ValueError("DEEPGRAM_API_KEY must be configured in environment.")
         self.client = DeepgramClient(api_key=self.api_key)
 
-    # -------------------------------------------------------------------------
-    # Prerecorded method (Disabled per project requirements for real-time STT)
-    # -------------------------------------------------------------------------
-    # def transcribe_blob(self, file_bytes: bytes, mime_type: str = "audio/wav") -> str:
-    #     """
-    #     [DISABLED] Prerecorded audio blob transcription.
-    #     Use create_live_stream() for real-time streaming STT instead.
-    #     """
-    #     raise NotImplementedError("Prerecorded transcription is disabled. Use real-time live streaming STT.")
+    def transcribe_blob(self, file_bytes: bytes, mime_type: str = "audio/wav") -> str:
+        """Transcribes pre-recorded audio bytes to text using Deepgram SDK v7.6.0."""
+        try:
+            response = self.client.listen.v1.media.transcribe_file(
+                request=file_bytes,
+                model="nova-2-general",
+                smart_format=True,
+            )
+            if hasattr(response, "results") and response.results and response.results.channels:
+                alt = response.results.channels[0].alternatives[0]
+                return alt.transcript
+            return ""
+        except Exception as e:
+            print(f"Deepgram STT Blob Error: {e}")
+            return ""
 
     def create_live_stream(
         self,

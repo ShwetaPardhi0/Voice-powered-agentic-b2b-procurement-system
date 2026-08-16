@@ -45,31 +45,25 @@ class VoicePipeline:
 
     def run(
         self,
-        audio_bytes_or_transcript,
-        session_id: str,
+        audio_bytes_or_transcript=None,
+        session_id: str = "default_session",
         mime_type: str = "audio/wav",
         tts_output_path: str = None,
+        audio_bytes: bytes = None,
     ) -> dict:
-        """
-        Full synchronous pipeline pass:
-          audio_bytes -> transcript -> intent -> agent reply -> tts audio bytes.
+        input_data = audio_bytes if audio_bytes is not None else audio_bytes_or_transcript
 
-        Returns:
-            {
-              "transcript": str,
-              "intent":     dict,
-              "response":   str,
-              "audio":      bytes  # TTS-synthesised reply
-            }
-        """
         # 1. Transcribe / Transcript Input -------------------------------
-        if isinstance(audio_bytes_or_transcript, str):
-            transcript = audio_bytes_or_transcript
-        else:
+        if isinstance(input_data, str):
+            transcript = input_data
+        elif input_data is not None:
             try:
-                transcript = self.stt.transcribe_blob(audio_bytes_or_transcript, mime_type=mime_type)
-            except (NotImplementedError, AttributeError):
+                transcript = self.stt.transcribe_blob(input_data, mime_type=mime_type)
+            except Exception as e:
+                print(f"[Pipeline STT Warning]: {e}")
                 transcript = ""
+        else:
+            transcript = ""
         print(f"[Pipeline] Transcript: {transcript!r}")
 
         if not transcript:
