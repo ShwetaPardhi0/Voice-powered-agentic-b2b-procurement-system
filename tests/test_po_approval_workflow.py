@@ -9,8 +9,7 @@ import os
 import sys
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")

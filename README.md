@@ -200,16 +200,16 @@ python voice/livekit_agent.py dev
 
 ```bash
 # Test PO approval workflow (auto-approval, pending, duplicate guard)
-python test_po_approval_workflow.py
+python tests/test_po_approval_workflow.py
 
 # Test 4-stage reminder & escalation system (with time simulation)
-python test_reminder_escalation.py
+python tests/test_reminder_escalation.py
 
 # Test database connectivity
-python test_db_conn.py
+python tests/test_db_conn.py
 
 # Verify full agent + RAG flow
-python verify_flow.py
+python tests/verify_flow.py
 ```
 
 ---
@@ -237,6 +237,16 @@ python verify_flow.py
 │   ├── email_service.py   # SMTP HTML email notifications
 │   ├── redis_service.py   # Transient caching layer
 │   └── reminder_service.py # 4-stage PO reminder & escalation engine
+├── tests/                 # Integrated test and verification suite
+│   ├── test_po_approval_workflow.py
+│   ├── test_reminder_escalation.py
+│   ├── test_db_conn.py
+│   ├── test_db_rows.py
+│   ├── test_query.py
+│   ├── verify_flow.py
+│   ├── verify_pipeline.py
+│   ├── verify_rag.py
+│   └── voice_terminal_test.py
 ├── voice/
 │   ├── livekit_agent.py   # LiveKit WebRTC production agent worker
 │   ├── deepgram_stt.py    # Deepgram STT integration
@@ -244,6 +254,7 @@ python verify_flow.py
 │   └── pipeline.py        # End-to-end voice pipeline
 ├── data/                  # Supplier contracts, PDFs for ingestion
 ├── docker-compose.yml     # PostgreSQL + Redis infrastructure
+├── Dockerfile             # Multi-stage container build for FastAPI
 ├── requirements.txt
 └── .env.example
 ```
