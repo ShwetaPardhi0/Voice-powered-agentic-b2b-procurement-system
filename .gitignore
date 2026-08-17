@@ -1,16 +1,25 @@
-# Environment secrets
+# ─── Secrets & Environment ────────────────────────────────────────────────────
 .env
+*.key
+*.pem
 
-# Python caching & environments
+# ─── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ─── Virtual Environments ─────────────────────────────────────────────────────
 .venv/
 venv/
 ENV/
 env/
+.env.local
 
-# IDE and Project setups
+# ─── IDE & Editor ─────────────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.suo
@@ -18,13 +27,33 @@ env/
 *.njsproj
 *.sln
 *.swp
+*.sublime-workspace
 
-# OS generated files
+# ─── OS Generated ─────────────────────────────────────────────────────────────
+.DS_Store
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Audio output files
+# ─── Audio Output (generated responses) ──────────────────────────────────────
 *.wav
 *.mp3
 
+# ─── Build Artifacts ──────────────────────────────────────────────────────────
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ─── Test Artefacts ──────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/

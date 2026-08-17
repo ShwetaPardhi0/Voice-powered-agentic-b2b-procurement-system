@@ -1,28 +1,32 @@
 version: '3.8'
 
 services:
-  # Relational Vector Database
+
+  # ─── PostgreSQL with pgvector ─────────────────────────────────────────────────
   db:
     image: pgvector/pgvector:pg16
     container_name: b2b_procurement_db
+    restart: unless-stopped
     ports:
-      - "5433:5432" # Maps host 5433 to container 5432 to match .env DB_PORT
+      - "5433:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Manavleena#2
-      POSTGRES_DB: procurement_ai
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-yourpassword}
+      POSTGRES_DB: ${DB_NAME:-procurement_ai}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d procurement_ai"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-procurement_ai}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Cache and Events Bus
+  # ─── Redis (Transient Cache & Reminder State) ─────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: b2b_procurement_redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
@@ -33,6 +37,24 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # ─── FastAPI Application ──────────────────────────────────────────────────────
+  api:
+    build: .
+    container_name: b2b_procurement_api
+    restart: unless-stopped
+    ports:
+      - "7000:7000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 7000 --reload
 
 volumes:
   pgdata:

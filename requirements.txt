@@ -1,23 +1,40 @@
-fastapi
-uvicorn
-pydantic
-openai
+# ─── Core LLM & Agent Framework ───────────────────────────────────────────────
 langchain
 langchain-google-genai
 google-generativeai
+google-genai
+langgraph
+
+# ─── FastAPI Backend ───────────────────────────────────────────────────────────
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+# ─── Database ─────────────────────────────────────────────────────────────────
+psycopg2-binary
+sqlalchemy
+pgvector
+
+# ─── Voice Pipeline ──────────────────────────────────────────────────────────
+livekit
+livekit-api
+livekit-agents[deepgram,openai,silero]
+deepgram-sdk
+elevenlabs
+soundfile
+
+# ─── RAG ─────────────────────────────────────────────────────────────────────
+pypdf
+
+# ─── Slack & Notifications ────────────────────────────────────────────────────
+slack_sdk
+
+# ─── Caching ─────────────────────────────────────────────────────────────────
+redis
+
+# ─── Utilities ────────────────────────────────────────────────────────────────
 python-dotenv
 aiohttp
 pandas
-pgvector
-psycopg2-binary
-langgraph
-pypdf
-sqlalchemy
-livekit
-livekit-api
-deepgram-sdk
-elevenlabs
-python-multipart
-soundfile
-slack_sdk
-redis
+openai

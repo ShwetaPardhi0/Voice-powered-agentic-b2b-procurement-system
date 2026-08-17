@@ -1,97 +1,249 @@
-# Voice-Powered Agentic B2B Procurement System
+# 🏭 Voice-Powered Agentic B2B Inventory Control Tower
 
-A voice-compatible, multi-agent AI system designed to autonomously orchestrate B2B procurement workflows—including demand forecasting, best-quote supplier selection, reliability risk assessment, and purchase order drafting. Developed in Python and powered by Google Gemini models (`gemini-2.5-flash`, `text-embedding-004`) via LangGraph and SQLAlchemy.
+A **production-grade, voice-powered multi-agent AI system** that autonomously orchestrates end-to-end B2B procurement workflows — from real-time voice commands to supplier selection, risk assessment, purchase order generation, Slack-based approvals, and automated manager escalations.
+
+> **Stack**: LiveKit WebRTC · Deepgram STT · Gemini 2.5 Flash · ElevenLabs TTS · LangGraph · PostgreSQL + pgvector · Redis · FastAPI · Slack Block Kit
 
 ---
 
-## System Architecture
+## 🏗️ System Architecture
 
-```mermaid
-graph TD
-    Supervisor(Supervisor Agent) --> Forecast(Forecast Agent)
-    Supervisor --> Inventory(Inventory Agent)
-    Supervisor --> Supplier(Supplier Agent)
-    Supervisor --> Risk(Risk Agent)
-    Supervisor --> RAG(RAG Agent)
-    Supervisor --> Procurement(Procurement Agent)
-    
-    Forecast -.-> DB[(PostgreSQL)]
-    Inventory -.-> DB
-    Supplier -.-> DB
-    Procurement -.-> DB
-    RAG -.-> VectorDB[(pgvector Chunks)]
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│             LiveKit WebRTC Real-Time Voice Engine                   │
+│   Deepgram Nova-2 (STT)  ──▶  Gemini 2.5 Flash (LLM/Function Call) │
+│                               ──▶  ElevenLabs (TTS Streaming)      │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                  LangGraph Multi-Agent Supervisor                   │
+│   ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────────────┐  │
+│   │ Inventory │ │ Supplier  │ │   Risk    │ │   Procurement     │  │
+│   │   Agent   │ │   Agent   │ │   Agent   │ │      Agent        │  │
+│   └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └────────┬──────────┘  │
+└─────────┼─────────────┼─────────────┼────────────────┼─────────────┘
+          │             │             │                │
+          ▼             ▼             ▼                ▼
+┌──────────────────────────────────┐  ┌───────────────────────────────┐
+│   PostgreSQL + pgvector          │  │   Slack Approval Workflow      │
+│   (Source of Truth & RAG Store)  │  │   Email Notifications          │
+│                                  │  │   Reminder & Escalation Engine │
+└──────────────────────────────────┘  └───────────────────────────────┘
 ```
 
-* **Supervisor Node**: Orchestrates task routing using Gemini structured instructions.
-* **Forecast Agent**: Projects 30-day demand from transaction sales history or inventory thresholds.
-* **Inventory Agent**: Checks real-time stock levels across warehouses relative to reorder thresholds.
-* **Supplier Agent**: Queries quotes, catalog values, and lead times to calculate the cheapest purchase options.
-* **Risk Agent**: Grades supplier reliability based on history, active alerts, and contract compliance.
-* **RAG Agent**: Queries vector databases using pgvector to retrieve contract penalties, MOQs, and Escalations.
-* **Procurement Agent**: Auto-approves orders under ₹25,000, stages pending POs, and handles inventory additions.
+---
+
+## ⚙️ Core Subsystems
+
+### 🎙️ Voice Pipeline (`voice/`)
+| Component | Technology |
+|-----------|-----------|
+| Real-Time Transport | LiveKit WebRTC Worker |
+| Speech-to-Text | Deepgram Nova-2 |
+| Language Model | Gemini 2.5 Flash (function calling) |
+| Text-to-Speech | ElevenLabs streaming synthesis |
+
+### 🤖 Multi-Agent System (`agents/`)
+| Agent | Responsibility |
+|-------|---------------|
+| **Supervisor** | Routes tasks to sub-agents based on intent |
+| **Inventory Agent** | Checks real-time stock levels, reorder points, safety stock |
+| **Supplier Agent** | Evaluates quotes, pricing tiers, lead time, MOQ |
+| **Risk Agent** | Grades supplier reliability, contract compliance, supply chain risk |
+| **Procurement Agent** | PO creation, ₹25,000 threshold routing, PostgreSQL status updates |
+
+### 📚 RAG System (`rag/`)
+- **Vector Store**: PostgreSQL with `pgvector` extension
+- **Embeddings**: Gemini `text-embedding-004`
+- **Documents**: Supplier contracts, SLAs, penalty clauses, shipping policies, product catalogs
+
+### 🔔 Slack Approval Workflow (`services/`)
+- Auto-approves POs **≤ ₹25,000** → inventory updated immediately
+- POs **> ₹25,000** → Slack Block Kit card with **[🔍 View PO] [🟢 Approve] [🔴 Reject]**
+- Manager receives HTML email notification with PO details
+- **Signature Verification**: `SLACK_SIGNING_SECRET` protects the webhook from forged requests
+- **Duplicate Action Guard**: Terminal states (`APPROVED`/`REJECTED`) cannot be overwritten
+
+### ⏰ Reminder & Escalation Engine (`services/reminder_service.py`)
+| Day | Action |
+|-----|--------|
+| Day 0 | Initial Slack notification + Manager Email |
+| Day 1 | Day 1 Reminder (Slack + Email) |
+| Day 2 | Day 2 Final Reminder (Slack + Email) |
+| Day 3 | Escalate → Mark `OVERDUE` in PostgreSQL, update Slack card ⚠️ |
+
+> **Rule**: `OVERDUE` status **never** updates inventory. Reminders stop immediately on `APPROVED`/`REJECTED`.
 
 ---
 
-## Tech Stack
-* **Framework**: LangGraph (Multi-Agent workflow coordination)
-* **LLM Engine**: Google Gemini (via `langchain-google-genai` and `google-genai` SDK)
-* **Backend API**: FastAPI + Uvicorn
-* **Database**: PostgreSQL (v17/v18) with `pgvector` extension
-* **DB Connection & Pooling**: SQLAlchemy Connection Pool
+## 🔧 Environment Setup
 
----
-
-## Configuration & Environment Setup
-
-Copy your environment variables into `.env` standard root structure:
+Copy `.env.example` to `.env` and fill in your credentials:
 
 ```ini
-GOOGLE_API_KEY="GOOGLE_API_KEY"
-MODEL="gemini-2.5-flash"
-EMBEDDING_MODEL="text-embedding-004"
-TEMPERATURE=0.0
+# --- Google Gemini ---
+GOOGLE_API_KEY=your_google_api_key
+MODEL=gemini-2.5-flash
+EMBEDDING_MODEL=text-embedding-004
 
-DB_HOST="localhost"
+# --- PostgreSQL ---
+DB_HOST=localhost
 DB_PORT=5433
-DB_NAME="procurement_ai"
-DB_USER="postgres"
-DB_PASSWORD="yourpassword"
+DB_NAME=procurement_ai
+DB_USER=postgres
+DB_PASSWORD=yourpassword
+
+# --- Redis ---
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# --- LiveKit ---
+LIVEKIT_URL=wss://your-app.livekit.cloud
+LIVEKIT_API_KEY=your_api_key
+LIVEKIT_API_SECRET=your_api_secret
+
+# --- Deepgram ---
+DEEPGRAM_API_KEY=your_deepgram_key
+
+# --- ElevenLabs ---
+ELEVENLABS_API_KEY=your_elevenlabs_key
+ELEVENLABS_VOICE_ID=your_voice_id
+
+# --- Slack ---
+SLACK_BOT_TOKEN=xoxb-your-token
+SLACK_CHANNEL_ID=C0XXXXXXXXX
+SLACK_SIGNING_SECRET=your_signing_secret
+
+# --- Email (SMTP) ---
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your@gmail.com
+SMTP_PASSWORD=your_app_password
+MANAGER_EMAIL=manager@company.com
+
+# --- Dashboard ---
+DASHBOARD_BASE_URL=http://localhost:7000
 ```
-
-1. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Initialize & Seed the Database**:
-   Runs the `schema.sql` (creating the 11-table structure) and populates initial items:
-   ```bash
-   python database/init_db.py
-   ```
-
-3. **Ingest RAG Documents**:
-   Chunks, parses, and embeds PDF/text contracts inside `data/contracts/` to pgvector:
-   ```bash
-   python rag/ingest.py
-   ```
 
 ---
 
-## Running & Verifying the Project
+## 🚀 Quick Start
 
-### 1. Run Verification Flow
-Verify both standard agent routing and semantic RAG search queries:
+### 1. Start Infrastructure
 ```bash
+docker-compose up -d
+```
+Starts PostgreSQL (port `5433`) + Redis (port `6379`) with persistent volumes and health checks.
+
+### 2. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Initialize Database
+```bash
+python database/init_db.py
+```
+
+### 4. Ingest RAG Documents
+```bash
+python rag/ingest.py
+```
+Chunks and embeds all PDFs/contracts in `data/` into pgvector.
+
+### 5. Start the API Server
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 7000 --reload
+```
+
+### 6. Start the Voice Agent
+```bash
+python voice/livekit_agent.py dev
+```
+
+---
+
+## 📡 API Reference
+
+### Core
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/status` | Health check |
+| `GET` | `/api/inventory` | All inventory with threshold flags |
+| `GET` | `/api/orders` | Full PO history |
+| `GET` | `/api/db-analytics` | Financial analytics & counts |
+| `POST` | `/api/chat` | Text-based multi-agent query |
+
+### Purchase Orders
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/po/{po_id}` | Fetch PO details (PostgreSQL) |
+| `GET` | `/po-detail/{po_id}` | Manager dashboard HTML view |
+| `POST` | `/api/po/{po_id}/approve` | Direct approve via REST |
+| `POST` | `/api/po/{po_id}/reject` | Direct reject via REST |
+
+### Slack & Reminders
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/slack/actions` | Slack interactive webhook (signature verified) |
+| `POST` | `/api/reminders/process` | Trigger reminder/escalation sweep |
+
+### Voice
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/voice/agent/start` | Start LiveKit voice agent session |
+
+---
+
+## 🧪 Testing
+
+```bash
+# Test PO approval workflow (auto-approval, pending, duplicate guard)
+python test_po_approval_workflow.py
+
+# Test 4-stage reminder & escalation system (with time simulation)
+python test_reminder_escalation.py
+
+# Test database connectivity
+python test_db_conn.py
+
+# Verify full agent + RAG flow
 python verify_flow.py
 ```
 
-### 2. Boot Backend Server
-```bash
-python api/main.py
+---
+
+## 📂 Project Structure
+
 ```
-* **API Endpoints**: 
-  - `GET /api/status`: Health check verifying DB connection.
-  - `GET /api/inventory`: Lists all warehouse items and threshold flags.
-  - `GET /api/orders`: Retrieves full purchase order histories.
-  - `GET /api/db-analytics`: Financial and counts breakdown analytics.
-  - `POST /api/chat`: Interaction route triggering the multi-agent graph loop.
+├── agents/               # LangGraph multi-agent nodes
+│   ├── supervisor.py
+│   ├── inventory_agent.py
+│   ├── supplier_agent.py
+│   ├── risk_agent.py
+│   └── procurement_agent.py
+├── api/
+│   └── main.py           # FastAPI application & all endpoints
+├── database/
+│   ├── connection.py
+│   ├── schema.sql
+│   └── init_db.py
+├── rag/
+│   ├── ingest.py          # Chunking & pgvector embedding pipeline
+│   └── retriever.py       # Semantic similarity retrieval
+├── services/
+│   ├── slack_service.py   # Slack Block Kit cards & signature verification
+│   ├── email_service.py   # SMTP HTML email notifications
+│   ├── redis_service.py   # Transient caching layer
+│   └── reminder_service.py # 4-stage PO reminder & escalation engine
+├── voice/
+│   ├── livekit_agent.py   # LiveKit WebRTC production agent worker
+│   ├── deepgram_stt.py    # Deepgram STT integration
+│   ├── elevenlabs_tts.py  # ElevenLabs TTS integration
+│   └── pipeline.py        # End-to-end voice pipeline
+├── data/                  # Supplier contracts, PDFs for ingestion
+├── docker-compose.yml     # PostgreSQL + Redis infrastructure
+├── requirements.txt
+└── .env.example
+```
