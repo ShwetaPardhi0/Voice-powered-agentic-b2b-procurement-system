@@ -144,10 +144,10 @@ export default function App() {
       {/* Main Analytics Row */}
       <DashboardStats analytics={analytics} />
 
-      {/* Centerpiece Voice AI Row */}
+      {/* Centerpiece Voice AI Row — Expanded Orb Panel (7 cols) & Transcript (5 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Glowing Voice AI Orb Panel */}
-        <div className="lg:col-span-5">
+        {/* Expanded Siri Glowing Voice AI Orb Panel */}
+        <div className="lg:col-span-7">
           <VoiceOrb
             status={orbStatus}
             setStatus={setOrbStatus}
@@ -157,7 +157,7 @@ export default function App() {
         </div>
 
         {/* Live Speech & Agent Transcript Stream */}
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-5">
           <TranscriptPanel
             transcripts={transcripts}
             agentThought={orbStatus === "thinking" ? "LangGraph: Evaluating supplier quotes & PO thresholds..." : ""}
